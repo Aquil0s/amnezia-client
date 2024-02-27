@@ -33,17 +33,16 @@ PageType {
         anchors.fill: parent
         anchors.bottomMargin: drawer.collapsedHeight
 
-        ConnectButton {
-            anchors.centerIn: parent
-        }
-
         ColumnLayout {
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.bottom: parent.bottom
+//            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.fill: parent
+            anchors.topMargin: 34
             anchors.bottomMargin: 34
 
             BasicButtonType {
                 property bool isLoggingEnabled: SettingsController.isLoggingEnabled
+
+                Layout.alignment: Qt.AlignHCenter
 
                 implicitHeight: 36
 
@@ -59,6 +58,47 @@ PageType {
 
                 onClicked: {
                     PageController.goToPage(PageEnum.PageSettingsLogging)
+                }
+            }
+
+            ConnectButton {
+                id: connectButton
+                Layout.alignment: Qt.AlignCenter
+                Layout.fillHeight: true
+            }
+
+            BasicButtonType {
+                Layout.alignment: Qt.AlignHCenter
+
+                leftPadding: 16
+                rightPadding: 16
+
+                implicitHeight: 36
+
+                defaultColor: "transparent"
+                hoveredColor: Qt.rgba(1, 1, 1, 0.08)
+                pressedColor: Qt.rgba(1, 1, 1, 0.12)
+                disabledColor: "#878B91"
+                textColor: "#878B91"
+                leftImageColor: "transparent"
+                borderWidth: 0
+
+                property bool isSplitTunnelingEnabled: SitesModel.isTunnelingEnabled ||
+                                                       (ServersModel.isDefaultServerDefaultContainerHasSplitTunneling && ServersModel.getDefaultServerData("isServerFromApi"))
+
+                text: isSplitTunnelingEnabled ? qsTr("Split tunneling enabled") : qsTr("Split tunneling disabled")
+
+                imageSource: isSplitTunnelingEnabled ? "qrc:/images/controls/split-tunneling.svg" : ""
+                rightImageSource: "qrc:/images/controls/chevron-down.svg"
+
+                onClicked: {
+                    homeSplitTunnelingDrawer.open()
+                }
+
+                HomeSplitTunnelingDrawer {
+                    id: homeSplitTunnelingDrawer
+
+                    parent: root
                 }
             }
         }
@@ -182,7 +222,7 @@ PageType {
 
                 LabelTextType {
                     id: expandedServersMenuDescription
-                    Layout.bottomMargin: 24
+                    Layout.bottomMargin: ServersModel.isDefaultServerFromApi ? 69 : 24
                     Layout.fillWidth: true
                     horizontalAlignment: Qt.AlignHCenter
                     verticalAlignment: Qt.AlignVCenter
@@ -192,6 +232,9 @@ PageType {
                 RowLayout {
                     Layout.alignment: Qt.AlignHCenter | Qt.AlignVCenter
                     spacing: 8
+
+                    visible: !ServersModel.isDefaultServerFromApi
+                    onVisibleChanged: expandedServersMenuDescription.Layout
 
                     DropDownType {
                         id: containersDropDown
@@ -205,13 +248,12 @@ PageType {
                         rootButtonTextTopMargin: 8
                         rootButtonTextBottomMargin: 8
 
-                        text: ServersModel.defaultContainerName
+                        text: ServersModel.defaultServerDefaultContainerName
                         textColor: "#0E0E11"
                         headerText: qsTr("VPN protocol")
                         headerBackButtonImage: "qrc:/images/controls/arrow-left.svg"
 
                         rootButtonClickedFunction: function() {
-                            ServersModel.currentlyProcessedIndex = serversMenuContent.currentIndex
                             containersDropDown.open()
                         }
 
@@ -223,22 +265,26 @@ PageType {
                             Connections {
                                 target: ServersModel
 
-                                function onCurrentlyProcessedServerIndexChanged() {
+                                function onDefaultServerIndexChanged() {
                                     updateContainersModelFilters()
                                 }
                             }
 
                             function updateContainersModelFilters() {
-                                if (ServersModel.isCurrentlyProcessedServerHasWriteAccess()) {
-                                    proxyContainersModel.filters = ContainersModelFilters.getWriteAccessProtocolsListFilters()
+                                if (ServersModel.isDefaultServerHasWriteAccess()) {
+                                    proxyDefaultServerContainersModel.filters = ContainersModelFilters.getWriteAccessProtocolsListFilters()
                                 } else {
-                                    proxyContainersModel.filters = ContainersModelFilters.getReadAccessProtocolsListFilters()
+                                    proxyDefaultServerContainersModel.filters = ContainersModelFilters.getReadAccessProtocolsListFilters()
                                 }
                             }
 
                             model: SortFilterProxyModel {
-                                id: proxyContainersModel
-                                sourceModel: ContainersModel
+                                id: proxyDefaultServerContainersModel
+                                sourceModel: DefaultServerContainersModel
+                                
+                                sorters: [
+                                    RoleSorter { roleName: "isInstalled"; sortOrder: Qt.DescendingOrder }
+                                ]
                             }
 
                             Component.onCompleted: updateContainersModelFilters()
@@ -331,21 +377,7 @@ PageType {
                                         Layout.fillWidth: true
 
                                         text: name
-                                        descriptionText: {
-                                            var fullDescription = ""
-                                            if (hasWriteAccess) {
-                                                if (SettingsController.isAmneziaDnsEnabled()
-                                                        && ServersModel.isAmneziaDnsContainerInstalled(index)) {
-                                                    fullDescription += "Amnezia DNS | "
-                                                }
-                                            } else {
-                                                if (containsAmneziaDns) {
-                                                    fullDescription += "Amnezia DNS | "
-                                                }
-                                            }
-
-                                            return fullDescription += serverDescription
-                                        }
+                                        descriptionText: serverDescription
 
                                         checked: index === serversMenuContent.currentIndex
                                         checkable: !ConnectionController.isConnected
@@ -360,7 +392,6 @@ PageType {
 
                                             serversMenuContent.currentIndex = index
 
-                                            ServersModel.currentlyProcessedIndex = index
                                             ServersModel.defaultIndex = index
                                         }
 
@@ -381,7 +412,7 @@ PageType {
                                         z: 1
 
                                         onClicked: function() {
-                                            ServersModel.currentlyProcessedIndex = index
+                                            ServersModel.processedIndex = index
                                             PageController.goToPage(PageEnum.PageSettingsServerInfo)
                                             drawer.close()
                                         }

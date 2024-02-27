@@ -44,6 +44,7 @@ PageType {
 
         function onClosePage() {
             tabBar.isServerInfoShow = tabBarStackView.currentItem.objectName !== PageController.getPagePath(PageEnum.PageSettingsServerInfo)
+                                        && tabBarStackView.currentItem.objectName !== PageController.getPagePath(PageEnum.PageSettingsSplitTunneling)
 
             if (tabBarStackView.depth <= 1) {
                 return
@@ -60,7 +61,7 @@ PageType {
                 tabBarStackView.push(pagePath, { "objectName" : pagePath }, StackView.Immediate)
             }
             
-            tabBar.isServerInfoShow = page === PageEnum.PageSettingsServerInfo || tabBar.isServerInfoShow
+            tabBar.isServerInfoShow = page === PageEnum.PageSettingsServerInfo || PageEnum.PageSettingsSplitTunneling || tabBar.isServerInfoShow
         }
 
         function onGoToStartPage() {
@@ -108,7 +109,7 @@ PageType {
         function onNoInstalledContainers() {
             PageController.setTriggeredBtConnectButton(true)
 
-            ServersModel.currentlyProcessedIndex = ServersModel.getDefaultServerIndex()
+            ServersModel.processedIndex = ServersModel.getDefaultServerIndex()
             InstallController.setShouldCreateServer(false)
             PageController.goToPage(PageEnum.PageSetupWizardEasy)
         }
@@ -152,7 +153,7 @@ PageType {
 
         Component.onCompleted: {
             var pagePath = PageController.getPagePath(PageEnum.PageHome)
-            ServersModel.currentlyProcessedIndex = ServersModel.defaultIndex
+            ServersModel.processedIndex = ServersModel.defaultIndex
             tabBarStackView.push(pagePath, { "objectName" : pagePath })
         }
     }
@@ -196,7 +197,7 @@ PageType {
             image: "qrc:/images/controls/home.svg"
             onClicked: {
                 tabBarStackView.goToTabBarPage(PageEnum.PageHome)
-                ServersModel.currentlyProcessedIndex = ServersModel.defaultIndex
+                ServersModel.processedIndex = ServersModel.defaultIndex
                 tabBar.previousIndex = 0
             }
         }
