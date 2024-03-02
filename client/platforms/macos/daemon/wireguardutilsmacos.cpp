@@ -120,6 +120,8 @@ bool WireguardUtilsMacos::addInterface(const InterfaceConfig& config) {
   } else {
       FirewallParams params { };
       params.dnsServers.append(config.m_dnsServer);
+      params.dnsServers.append("127.0.0.1");
+      params.dnsServers.append("127.0.0.53");
       if (config.m_allowedIPAddressRanges.at(0).toString() == "0.0.0.0/0"){
         params.blockAll = true;
         if (config.m_excludedAddresses.size()) {
