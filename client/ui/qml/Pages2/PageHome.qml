@@ -34,7 +34,6 @@ PageType {
         anchors.bottomMargin: drawer.collapsedHeight
 
         ColumnLayout {
-//            anchors.horizontalCenter: parent.horizontalCenter
             anchors.fill: parent
             anchors.topMargin: 34
             anchors.bottomMargin: 34
